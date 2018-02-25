@@ -4,13 +4,28 @@ import {View} from 'react-native';
 import Card from './components/Card';
 
 export default class App extends Component {
+
+  state = {
+    profileIndex: 0,
+  }
+
+  nextCard = () => {
+    this.setState({profileIndex: this.state.profileIndex + 1});
+  }
+
   render() {
+    const {profileIndex} = this.state;
     return (
       <View style = {{flex: 1}}>
-        <Card profile = {profiles[0]}/>
-        <Card profile = {profiles[1]}/>
-        <Card profile = {profiles[2]}/>
-        <Card profile = {profiles[3]}/>
+        {profiles.slice(profileIndex, profileIndex + 3).reverse().map((profile) => {
+          return (
+            <Card
+              key = {profile.id}
+              profile = {profile}
+              onSwipeOff = {this.nextCard}
+            />
+          );
+        })}
       </View>
     );
   }
