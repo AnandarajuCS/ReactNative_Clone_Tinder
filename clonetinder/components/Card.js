@@ -7,9 +7,12 @@ import {
   Image,
   PanResponder,
   Animated,
+  Dimensions,
 } from 'react-native';
 
-const fbImage = 'https://graph.facebook.com/259389830744794/picture?height=500';
+import moment from 'moment';
+
+const {width, height} = Dimensions.get('window');
 
 export default class Card extends React.Component {
   componentWillMount() {
@@ -17,16 +20,32 @@ export default class Card extends React.Component {
     this.cardPanResponder = PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onPanResponderMove: Animated.event([null, {dx:this.pan.x, dy:this.pan.y}]),
-      onPanResponderRelease: () => {
-        Animated.spring(this.pan, {
-          toValue: {x:0, y:0},
-          friction: 4.5,
-        }).start();
+      onPanResponderRelease: (event, gesture) => {
+          const dx = gesture.dx;
+          const absDx = Math.abs(dx);
+          const direction = absDx / dx;
+          //threshold to decide to swipe out the card or not
+          if (absDx > 120) {
+            Animated.decay(this.pan, {
+                velocity: {x: 3 * direction, y: 0},
+                deceleration: 0.995,
+            }).start();
+          } else {
+            Animated.spring(this.pan, {
+            toValue: {x:0, y:0},
+            friction: 4.5,
+            }).start();
+          }
       },
     });
   }
 
   render() {
+    const {id, name, birthday, bio} = this.props.profile;
+    const fbImage = `https://graph.facebook.com/${id}/picture?height=500`;
+    const profileBday = moment(birthday, 'MM/DD/YYYY');
+    const profileAge = moment().diff(profileBday, 'years');
+
     // rotation and spring back animation
     const rotateCard = this.pan.x.interpolate({
       inputRange: [-200, 0, 200],
@@ -42,37 +61,31 @@ export default class Card extends React.Component {
       ],
     };
     return (
-      <View style={styles.container}>
-        <View style={styles.dummy}>
-        </View>
         <Animated.View
-        {...this.cardPanResponder.panHandlers}
-        style={[styles.card, animatedStyle]}>
-          <Image
-            style= {{flex: 1}}
-            source= {{uri: fbImage}}
-          />
-          <View style= {{margin:20}}>
-            <Text style= {{fontSize:20}}>Candice, 26</Text>
-            <Text style= {{fontSize:15, color:'darkgrey'}}>Supermodel</Text>
-          </View>
-          {/* <TouchableHighlight style={styles.button}>
+            {...this.cardPanResponder.panHandlers}
+            style={[styles.card, animatedStyle]}>
+            <Image
+                style= {{flex: 1}}
+                source= {{uri: fbImage}}
+            />
+            <View style= {{margin:20}}>
+                <Text style= {{fontSize:20}}>{name}, {profileAge}</Text>
+                <Text style= {{fontSize:15, color:'darkgrey'}}>{bio}</Text>
+            </View>
+            {/* <TouchableHighlight style={styles.button}>
             <Text style={styles.buttonText}>Press me!</Text>
-          </TouchableHighlight> */}
+            </TouchableHighlight> */}
         </Animated.View>
-        <View style={styles.dummy}>
-        </View>
-      </View>
     );
   }
 }
 
 const styles = StyleSheet.create({
-  dummy: {
-    flex: 1,
-  },
   card: {
-    flex: 8,
+    position: 'absolute',
+    width: width - 20,
+    height: height * 0.7,
+    top: (height * 0.3) / 2,
     overflow: 'hidden',
     backgroundColor: 'white',
     margin: 10,
